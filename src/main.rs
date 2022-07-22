@@ -1,6 +1,8 @@
 use actix_web::{
-    error, get, main, middleware::Logger, web, App, HttpResponse, HttpServer, Responder, Result,
+    error, get, http::StatusCode, main, middleware::Logger, web, App, HttpResponse, HttpServer,
+    Responder, Result,
 };
+use chrono::Utc;
 use derive_more::{Display, Error};
 use lib::{
     parser,
@@ -17,7 +19,14 @@ struct SalatError {
     message: String,
 }
 
-impl error::ResponseError for SalatError {}
+impl error::ResponseError for SalatError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code()).body(self.message.clone())
+    }
+    fn status_code(&self) -> StatusCode {
+        StatusCode::INTERNAL_SERVER_ERROR
+    }
+}
 
 #[derive(Deserialize, Debug)]
 struct DataQuery {
@@ -68,9 +77,22 @@ async fn next(
         message: "Island not found".to_owned(),
     })?;
 
-    let prayer_today = &data.get_today(island.to_owned());
+    let prayer_today = &data.get_today(island.to_owned()).ok_or(SalatError {
+        message: "Next prayer not found.".to_owned(),
+    })?;
 
-    Ok("")
+    let call = data
+        .timings
+        .iter()
+        .find(|p| convert_timestamp_to_date(prayer_today.get_value(p.as_str()).into()) > Utc::now())
+        .cloned()
+        .ok_or(SalatError {
+            message: "Fuck it".to_owned(),
+        })?;
+
+    info!("{call}");
+
+    Ok(call)
 }
 
 #[main]
@@ -95,6 +117,7 @@ async fn main() -> Result<()> {
         App::new()
             .service(hello)
             .service(today)
+            .service(next)
             .app_data(web_data.clone())
             .wrap(Logger::default())
     })

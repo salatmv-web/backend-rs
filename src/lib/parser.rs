@@ -36,7 +36,17 @@ pub struct PrayerTimes {
 }
 
 impl PrayerTimes {
-    fn to_value(&self) {}
+    pub fn get_value(&self, name: &str) -> i16 {
+        match name {
+            "fajr" => self.fajr,
+            "sunrise" => self.sunrise,
+            "duhr" => self.duhr,
+            "asr" => self.asr,
+            "maghrib" => self.maghrib,
+            "isha" => self.isha,
+            _ => 0,
+        }
+    }
 }
 
 pub fn convert_csv<D>(name: &str) -> Vec<D>

@@ -1,4 +1,4 @@
-use chrono::Utc;
+use chrono::Local;
 
 use super::{
     parser::{Atoll, Island, PrayerTimes},
@@ -29,7 +29,7 @@ impl Salat for Prayer {
     }
 
     fn get_today(&self, island: Island) -> Option<PrayerTimes> {
-        self.get_entry_from_day(days_into_year(Utc::now().date()), island)
+        self.get_entry_from_day(days_into_year(Local::now().date()), island)
     }
 }
 

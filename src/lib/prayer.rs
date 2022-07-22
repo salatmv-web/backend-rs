@@ -1,11 +1,15 @@
 use chrono::Utc;
 
-use super::{parser::{Atoll, Island, PrayerTimes}, utils::days_into_year};
+use super::{
+    parser::{Atoll, Island, PrayerTimes},
+    utils::days_into_year,
+};
 
 pub struct Prayer {
     pub atolls: Vec<Atoll>,
     pub islands: Vec<Island>,
     pub prayers: Vec<PrayerTimes>,
+    pub timings: Vec<String>,
 }
 
 impl Salat for Prayer {
@@ -18,7 +22,10 @@ impl Salat for Prayer {
     }
 
     fn get_entry_from_day(&self, day: i64, island: Island) -> Option<PrayerTimes> {
-        self.prayers.iter().find(|p| p.date == day && p.category_id == island.category_id).cloned()
+        self.prayers
+            .iter()
+            .find(|p| p.date == day && p.category_id == island.category_id)
+            .cloned()
     }
 
     fn get_today(&self, island: Island) -> Option<PrayerTimes> {

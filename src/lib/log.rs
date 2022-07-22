@@ -1,5 +1,5 @@
-use std::path::Path;
 use chrono::Local;
+use std::path::Path;
 
 pub fn setup_logger() -> Result<(), fern::InitError> {
     let logs_dir = Path::new("logs");
@@ -20,7 +20,10 @@ pub fn setup_logger() -> Result<(), fern::InitError> {
         })
         .level(log::LevelFilter::Debug)
         .chain(std::io::stdout())
-        .chain(fern::log_file(format!("logs/{}.log", Local::now().format("%Y-%m-%d")))?)
+        .chain(fern::log_file(format!(
+            "logs/{}.log",
+            Local::now().format("%Y-%m-%d")
+        ))?)
         .apply()?;
     Ok(())
 }

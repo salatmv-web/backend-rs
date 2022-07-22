@@ -908,6 +908,7 @@ dependencies = [
  "actix-web",
  "chrono",
  "csv",
+ "derive_more",
  "fern",
  "log",
  "serde",

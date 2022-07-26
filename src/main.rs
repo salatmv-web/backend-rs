@@ -2,19 +2,19 @@ use actix_web::{
     error, get, http::StatusCode, main, middleware::Logger, web, App, HttpResponse, HttpServer,
     Responder, Result,
 };
-use chrono::Utc;
+use chrono::Local;
 use derive_more::{Display, Error};
 use lib::{
-    parser,
+    parser::{self, PrayerTimes},
     prayer::{Prayer, Salat},
-    utils::convert_timestamp_to_date,
+    utils::{convert_timestamp_to_date, convert_timestamp_to_string, days_into_year},
 };
 use log::info;
 use serde::{Deserialize, Serialize};
 
 mod lib;
 
-#[derive(Debug, Display, Error)]
+#[derive(Debug, Display, Error, Clone)]
 struct SalatError {
     message: String,
 }
@@ -37,6 +37,13 @@ struct DataQuery {
 struct TodayData {
     island: parser::Island,
     prayer_times: parser::PrayerTimes,
+}
+
+#[derive(Serialize, Debug)]
+struct NextData {
+    call: String,
+    timestamp: i16,
+    timestamp_str: String,
 }
 
 #[get("/")]
@@ -77,22 +84,47 @@ async fn next(
         message: "Island not found".to_owned(),
     })?;
 
-    let prayer_today = &data.get_today(island.to_owned()).ok_or(SalatError {
-        message: "Next prayer not found.".to_owned(),
-    })?;
+    let prayer_error = SalatError {
+        message: "Prayer for next not found".to_owned(),
+    };
 
-    let call = data
+    let prayer_today = &data
+        .get_today(island.to_owned())
+        .ok_or(prayer_error.clone())?;
+
+    let now = Local::now();
+
+    let call = &data
         .timings
         .iter()
-        .find(|p| convert_timestamp_to_date(prayer_today.get_value(p.as_str()).into()) > Utc::now())
-        .cloned()
-        .ok_or(SalatError {
-            message: "Fuck it".to_owned(),
-        })?;
+        .find(|p| {
+            convert_timestamp_to_date(prayer_today.get_value(p.as_str()).into()).expect("Bullshit")
+                >= now
+        })
+        .cloned();
 
-    info!("{call}");
+    //let new_call = call.unwrap_or("fajr".to_owned());
+    let new_call: String;
+    let new_prayer: PrayerTimes;
 
-    Ok(call)
+    if let None = call {
+        new_call = "fajr".to_owned();
+
+        let next_day = data
+            .get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.to_owned())
+            .ok_or(prayer_error)?;
+
+        new_prayer = next_day;
+    } else {
+        new_call = call.as_ref().unwrap().to_owned();
+        new_prayer = prayer_today.to_owned();
+    }
+
+    Ok(web::Json(NextData {
+        call: new_call.clone(),
+        timestamp: new_prayer.get_value(&new_call),
+        timestamp_str: convert_timestamp_to_string(new_prayer.get_value(new_call.as_str()).into()),
+    }))
 }
 
 #[main]
@@ -100,13 +132,13 @@ async fn main() -> Result<()> {
     lib::log::setup_logger().expect("Logger initialization failed");
 
     let web_data = web::Data::new(Prayer {
-        atolls: parser::convert_csv("atolls"),
-        islands: parser::convert_csv("islands"),
-        prayers: parser::convert_csv("prayertimes"),
+        atolls: parser::convert_csv("atolls".to_owned()),
+        islands: parser::convert_csv("islands".to_owned()),
+        prayers: parser::convert_csv("prayertimes".to_owned()),
         timings: vec![
             "fajr".to_owned(),
             "sunrise".to_owned(),
-            "dhuhr".to_owned(),
+            "duhr".to_owned(),
             "asr".to_owned(),
             "maghrib".to_owned(),
             "isha".to_owned(),

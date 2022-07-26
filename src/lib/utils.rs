@@ -1,6 +1,6 @@
-use chrono::{Date, DateTime, Datelike, Local, NaiveDate, TimeZone, Utc};
+use chrono::{Date, DateTime, Datelike, Local, TimeZone, Timelike};
 
-pub fn convert_timestamp_to_date(timestamp: i64) -> DateTime<Utc> {
+pub fn convert_timestamp_to_date(timestamp: i64) -> Result<DateTime<Local>, String> {
     let now = Local::now();
 
     let new_timestamp: u32 = timestamp.try_into().unwrap();
@@ -8,12 +8,14 @@ pub fn convert_timestamp_to_date(timestamp: i64) -> DateTime<Utc> {
     let hours = new_timestamp / 60;
     let minutes = new_timestamp % 60;
 
-    let naive_date =
-        NaiveDate::from_ymd(now.year(), now.month(), now.day()).and_hms(hours, minutes, 0);
-
-    DateTime::<Utc>::from_utc(naive_date, Utc)
+    Ok(now
+        .with_hour(hours)
+        .ok_or("Failed to set hour.")?
+        .with_minute(minutes)
+        .ok_or("Failed to parse minute")?
+        .with_second(0)
+        .unwrap())
 }
-
 pub fn days_into_year(date: Date<Local>) -> i64 {
     (date - Local.ymd(date.year(), 1, 1)).num_days()
 }

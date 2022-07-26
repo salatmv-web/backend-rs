@@ -49,11 +49,11 @@ impl PrayerTimes {
     }
 }
 
-pub fn convert_csv<D>(name: &str) -> Vec<D>
+pub fn convert_csv<D>(name: String) -> Vec<D>
 where
     D: DeserializeOwned,
 {
-    let file = File::open(format!("assets/{}.csv", name))
+    let file = File::open(format!("assets/{}.csv", &name))
         .expect(format!("Failed to open {}.csv", name).as_str());
     let mut reader = csv::ReaderBuilder::new().from_reader(file);
     let mut contents = vec![];

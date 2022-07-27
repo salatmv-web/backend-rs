@@ -5,7 +5,7 @@ use actix_web::{
 use chrono::Local;
 use derive_more::{Display, Error};
 use lib::{
-    parser::{self, PrayerTimes},
+    parser::{self, Island, PrayerTimes},
     prayer::{Prayer, Salat},
     utils::{convert_timestamp_to_date, convert_timestamp_to_string, days_into_year},
 };
@@ -44,6 +44,21 @@ struct NextData {
     call: String,
     timestamp: i16,
     timestamp_str: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct IslandQuery {
+    island: Option<i16>,
+}
+
+#[derive(Serialize, Debug)]
+struct IslandsData {
+    islands: Vec<Island>,
+}
+
+#[derive(Serialize, Debug)]
+struct IslandData {
+    island: Island,
 }
 
 #[get("/")]
@@ -103,7 +118,6 @@ async fn next(
         })
         .cloned();
 
-    //let new_call = call.unwrap_or("fajr".to_owned());
     let new_call: String;
     let new_prayer: PrayerTimes;
 
@@ -125,6 +139,25 @@ async fn next(
         timestamp: new_prayer.get_value(&new_call),
         timestamp_str: convert_timestamp_to_string(new_prayer.get_value(new_call.as_str()).into()),
     }))
+}
+
+#[get("/island")]
+async fn island_get(
+    data: web::Data<Prayer>,
+    query: web::Query<IslandQuery>,
+) -> Result<impl Responder, SalatError> {
+    Ok(web::Json(IslandData {
+        island: data.get_island(query.island.unwrap()).ok_or(SalatError {
+            message: "Island not found.".to_owned(),
+        })?,
+    }))
+}
+
+#[get("/islands")]
+async fn islands_get(data: web::Data<Prayer>) -> impl Responder {
+    web::Json(IslandsData {
+        islands: data.islands.clone(),
+    })
 }
 
 #[main]
@@ -150,6 +183,7 @@ async fn main() -> Result<()> {
             .service(hello)
             .service(today)
             .service(next)
+            .service(island_get)
             .app_data(web_data.clone())
             .wrap(Logger::default())
     })

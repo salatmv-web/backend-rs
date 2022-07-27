@@ -46,11 +46,6 @@ struct NextData {
     timestamp_str: String,
 }
 
-#[derive(Deserialize, Debug)]
-struct IslandQuery {
-    island: Option<i16>,
-}
-
 #[derive(Serialize, Debug)]
 struct IslandData {
     island: Island,
@@ -139,10 +134,10 @@ async fn next(
 #[get("/island")]
 async fn island_get(
     data: web::Data<Prayer>,
-    query: web::Query<IslandQuery>,
+    query: web::Query<DataQuery>,
 ) -> Result<impl Responder, SalatError> {
     Ok(web::Json(IslandData {
-        island: data.get_island(query.island.unwrap()).ok_or(SalatError {
+        island: data.get_island(query.island).ok_or(SalatError {
             message: "Island not found.".to_owned(),
         })?,
     }))

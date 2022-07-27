@@ -52,11 +52,6 @@ struct IslandQuery {
 }
 
 #[derive(Serialize, Debug)]
-struct IslandsData {
-    islands: Vec<Island>,
-}
-
-#[derive(Serialize, Debug)]
 struct IslandData {
     island: Island,
 }
@@ -155,9 +150,7 @@ async fn island_get(
 
 #[get("/islands")]
 async fn islands_get(data: web::Data<Prayer>) -> impl Responder {
-    web::Json(IslandsData {
-        islands: data.islands.clone(),
-    })
+    web::Json(data.islands.clone())
 }
 
 #[main]
@@ -184,6 +177,7 @@ async fn main() -> Result<()> {
             .service(today)
             .service(next)
             .service(island_get)
+            .service(islands_get)
             .app_data(web_data.clone())
             .wrap(Logger::default())
     })

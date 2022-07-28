@@ -95,7 +95,7 @@ async fn next(
 
     let prayer_today = &data
         .get_today(island.to_owned())
-        .ok_or(prayer_error.clone())?;
+        .ok_or_else(|| prayer_error.clone())?;
 
     let now = Local::now();
 
@@ -111,7 +111,7 @@ async fn next(
     let new_call: String;
     let new_prayer: PrayerTimes;
 
-    if let None = call {
+    if call.is_none() {
         new_call = "fajr".to_owned();
 
         let next_day = data

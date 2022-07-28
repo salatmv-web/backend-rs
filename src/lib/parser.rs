@@ -54,7 +54,7 @@ where
     D: DeserializeOwned,
 {
     let file = File::open(format!("assets/{}.csv", &name))
-        .expect(format!("Failed to open {}.csv", name).as_str());
+        .unwrap_or_else(|_| panic!("Failed to open {}.csv", name));
     let mut reader = csv::ReaderBuilder::new().from_reader(file);
     let mut contents = vec![];
 

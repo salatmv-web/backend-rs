@@ -1,3 +1,4 @@
+use eyre::Result;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::File;
 
@@ -49,7 +50,7 @@ impl PrayerTimes {
     }
 }
 
-pub fn convert_csv<D>(name: String) -> Vec<D>
+pub fn convert_csv<D>(name: String) -> Result<Vec<D>>
 where
     D: DeserializeOwned,
 {
@@ -59,8 +60,8 @@ where
     let mut contents = vec![];
 
     for content in reader.deserialize::<D>() {
-        contents.push(content.expect("Failed to parse a line."));
+        contents.push(content?);
     }
 
-    contents
+    Ok(contents)
 }

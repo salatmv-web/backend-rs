@@ -89,7 +89,7 @@ async fn today(
     let prayer_today = &data.get_today(island.clone());
 
     Ok(web::Json(TodayData {
-        island: island.to_owned(),
+        island: island.clone(),
         prayer_times: prayer_today.clone().ok_or_else(|| SalatError {
             message: "Prayer for today not found.".to_owned(),
         })?,
@@ -127,8 +127,8 @@ async fn next(
     let new_call: String;
     let new_prayer = if call.is_none() {
         new_call = "fajr".to_owned();
-        data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.to_owned())
-            .ok_or_else(|| prayer_error)?
+        data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.clone())
+            .ok_or(prayer_error)?
     } else {
         new_call = call.as_ref().unwrap().clone();
         prayer_today.clone()
@@ -163,9 +163,9 @@ async fn main() -> eyre::Result<()> {
     lib::log::setup_logger()?;
 
     let web_data = web::Data::new(Prayer {
-        atolls: parser::convert_csv("atolls".to_owned()),
-        islands: parser::convert_csv("islands".to_owned()),
-        prayers: parser::convert_csv("prayertimes".to_owned()),
+        atolls: parser::convert_csv("atolls".to_owned())?,
+        islands: parser::convert_csv("islands".to_owned())?,
+        prayers: parser::convert_csv("prayertimes".to_owned())?,
         timings: vec![
             "fajr".to_owned(),
             "sunrise".to_owned(),

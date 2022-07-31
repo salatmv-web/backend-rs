@@ -1,7 +1,8 @@
 use chrono::Local;
+use eyre::Result;
 use std::path::Path;
 
-pub fn setup_logger() -> Result<(), fern::InitError> {
+pub fn setup_logger() -> Result<()> {
     let logs_dir = Path::new("logs");
 
     if !logs_dir.exists() {

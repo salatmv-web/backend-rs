@@ -1,6 +1,6 @@
 use actix_web::{
     error, get, http::StatusCode, main, middleware::Logger, web, App, HttpResponse, HttpServer,
-    Responder, Result,
+    Responder,
 };
 use chrono::Local;
 use derive_more::{Display, Error};
@@ -66,7 +66,7 @@ async fn hello() -> impl Responder {
 }
 
 #[get("/atoll")]
-async fn get_atoll(
+async fn atoll_get(
     data: web::Data<Prayer>,
     query: web::Query<AtollQuery>,
 ) -> Result<impl Responder, SalatError> {
@@ -75,6 +75,11 @@ async fn get_atoll(
     })?;
 
     Ok(web::Json(atoll))
+}
+
+#[get("/atolls")]
+async fn atolls_get(data: web::Data<Prayer>) -> Result<impl Responder, SalatError> {
+    Ok(web::Json(data.atolls.clone()))
 }
 
 #[get("/today")]
@@ -128,7 +133,7 @@ async fn next(
     let new_prayer = if call.is_none() {
         new_call = "fajr".to_owned();
         data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.clone())
-            .ok_or(prayer_error)?
+            .ok_or_else(|| prayer_error)?
     } else {
         new_call = call.as_ref().unwrap().clone();
         prayer_today.clone()
@@ -183,6 +188,8 @@ async fn main() -> eyre::Result<()> {
             .service(next)
             .service(island_get)
             .service(islands_get)
+            .service(atoll_get)
+            .service(atolls_get)
             .app_data(web_data.clone())
             .wrap(Logger::default())
     })

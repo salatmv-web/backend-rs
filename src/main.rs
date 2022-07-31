@@ -5,7 +5,7 @@ use actix_web::{
 use chrono::Local;
 use derive_more::{Display, Error};
 use lib::{
-    parser::{self, Island, PrayerTimes},
+    parser::{self, Island},
     prayer::{Prayer, Salat},
     utils::{convert_timestamp_to_date, convert_timestamp_to_string, days_into_year},
 };
@@ -66,11 +66,11 @@ async fn today(
         message: "Island not found".to_owned(),
     })?;
 
-    let prayer_today = &data.get_today(island.to_owned());
+    let prayer_today = &data.get_today(island.clone());
 
     let result = Ok(web::Json(TodayData {
-        island: island.to_owned(),
-        prayer_times: prayer_today.to_owned().ok_or(SalatError {
+        island: island.clone(),
+        prayer_times: prayer_today.clone().ok_or(SalatError {
             message: "Prayer for today not found.".to_owned(),
         })?,
     }));
@@ -94,7 +94,7 @@ async fn next(
     };
 
     let prayer_today = &data
-        .get_today(island.to_owned())
+        .get_today(island.clone())
         .ok_or_else(|| prayer_error.clone())?;
 
     let now = Local::now();
@@ -103,26 +103,20 @@ async fn next(
         .timings
         .iter()
         .find(|p| {
-            convert_timestamp_to_date(prayer_today.get_value(p.as_str()).into()).expect("Bullshit")
+            convert_timestamp_to_date(prayer_today.get_value(p.as_str()).into()).expect("Dickhead")
                 >= now
         })
         .cloned();
 
     let new_call: String;
-    let new_prayer: PrayerTimes;
-
-    if call.is_none() {
+    let new_prayer = if call.is_none() {
         new_call = "fajr".to_owned();
-
-        let next_day = data
-            .get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.to_owned())
-            .ok_or(prayer_error)?;
-
-        new_prayer = next_day;
+        data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.clone())
+            .ok_or(prayer_error)?
     } else {
-        new_call = call.as_ref().unwrap().to_owned();
-        new_prayer = prayer_today.to_owned();
-    }
+        new_call = call.as_ref().unwrap().clone();
+        prayer_today.clone()
+    };
 
     Ok(web::Json(NextData {
         call: new_call.clone(),
@@ -149,8 +143,8 @@ async fn islands_get(data: web::Data<Prayer>) -> impl Responder {
 }
 
 #[main]
-async fn main() -> Result<()> {
-    lib::log::setup_logger().expect("Logger initialization failed");
+async fn main() -> eyre::Result<()> {
+    lib::log::setup_logger()?;
 
     let web_data = web::Data::new(Prayer {
         atolls: parser::convert_csv("atolls".to_owned()),

@@ -10,6 +10,7 @@ actix-web = "4.1.0"
 chrono = "0.4.19"
 csv = "1.1.6"
 derive_more = "0.99.17"
+eyre = "0.6.8"
 fern = "0.6.1"
 log = "0.4.17"
 serde = { version = "1.0.138", features = ["derive"] }

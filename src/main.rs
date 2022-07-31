@@ -6,10 +6,9 @@ use chrono::Local;
 use derive_more::{Display, Error};
 use lib::{
     parser::{self, Island},
-    prayer::{Prayer, Salat},
+    prayer::Prayer,
     utils::{convert_timestamp_to_date, convert_timestamp_to_string, days_into_year},
 };
-use log::info;
 use serde::{Deserialize, Serialize};
 
 mod lib;
@@ -33,6 +32,16 @@ struct DataQuery {
     island: i16,
 }
 
+#[derive(Deserialize, Debug)]
+struct IDQuery {
+    id: i16,
+}
+
+#[derive(Deserialize, Debug)]
+struct AtollQuery {
+    id: i8,
+}
+
 #[derive(Serialize, Debug)]
 struct TodayData {
     island: parser::Island,
@@ -53,8 +62,19 @@ struct IslandData {
 
 #[get("/")]
 async fn hello() -> impl Responder {
-    info!("/ 200");
-    HttpResponse::Ok().body("Hello, World!")
+    "Hello, World!"
+}
+
+#[get("/atoll")]
+async fn get_atoll(
+    data: web::Data<Prayer>,
+    query: web::Query<AtollQuery>,
+) -> Result<impl Responder, SalatError> {
+    let atoll = data.get_atoll(query.id).ok_or_else(|| SalatError {
+        message: "Failed to get atoll".to_string(),
+    })?;
+
+    Ok(web::Json(atoll))
 }
 
 #[get("/today")]
@@ -62,22 +82,18 @@ async fn today(
     data: web::Data<Prayer>,
     query: web::Query<DataQuery>,
 ) -> Result<impl Responder, SalatError> {
-    let island = &data.get_island(query.island).ok_or(SalatError {
+    let island = &data.get_island(query.island).ok_or_else(|| SalatError {
         message: "Island not found".to_owned(),
     })?;
 
     let prayer_today = &data.get_today(island.clone());
 
-    let result = Ok(web::Json(TodayData {
-        island: island.clone(),
-        prayer_times: prayer_today.clone().ok_or(SalatError {
+    Ok(web::Json(TodayData {
+        island: island.to_owned(),
+        prayer_times: prayer_today.clone().ok_or_else(|| SalatError {
             message: "Prayer for today not found.".to_owned(),
         })?,
-    }));
-
-    info!("/today 200");
-
-    result
+    }))
 }
 
 #[get("/next")]
@@ -85,7 +101,7 @@ async fn next(
     data: web::Data<Prayer>,
     query: web::Query<DataQuery>,
 ) -> Result<impl Responder, SalatError> {
-    let island = &data.get_island(query.island).ok_or(SalatError {
+    let island = &data.get_island(query.island).ok_or_else(|| SalatError {
         message: "Island not found".to_owned(),
     })?;
 
@@ -111,8 +127,8 @@ async fn next(
     let new_call: String;
     let new_prayer = if call.is_none() {
         new_call = "fajr".to_owned();
-        data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.clone())
-            .ok_or(prayer_error)?
+        data.get_entry_from_day((days_into_year(now.date()) + 1) % 366, island.to_owned())
+            .ok_or_else(|| prayer_error)?
     } else {
         new_call = call.as_ref().unwrap().clone();
         prayer_today.clone()
@@ -128,10 +144,10 @@ async fn next(
 #[get("/island")]
 async fn island_get(
     data: web::Data<Prayer>,
-    query: web::Query<DataQuery>,
+    query: web::Query<IDQuery>,
 ) -> Result<impl Responder, SalatError> {
     Ok(web::Json(IslandData {
-        island: data.get_island(query.island).ok_or(SalatError {
+        island: data.get_island(query.id).ok_or_else(|| SalatError {
             message: "Island not found.".to_owned(),
         })?,
     }))

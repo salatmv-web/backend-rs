@@ -1,7 +1,7 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::File;
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Island {
     pub category_id: i8,
     pub island_id: i16,
@@ -15,7 +15,7 @@ pub struct Island {
     pub status: i8,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Atoll {
     pub category_id: i8,
     pub name: String,
@@ -23,7 +23,7 @@ pub struct Atoll {
     pub dhivehi_name: String,
 }
 
-#[derive(Debug, Deserialize, Clone, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PrayerTimes {
     pub category_id: i8,
     pub date: i64,
